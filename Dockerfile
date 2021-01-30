@@ -3,7 +3,7 @@
 #
 FROM alpine:3 as repository
 
-WORKDIR /root
+WORKDIR /usr/local/src
 
 RUN true                                                            \
     && apk add --update-cache                                       \
@@ -23,10 +23,10 @@ FROM repository as no-frills-builder
 WORKDIR /root
 
 ARG SQLITE_VERSION=master
-RUN true                                                    \
-    && ( cd /root/sqlite ; git checkout "$SQLITE_VERSION" ) \
-    && ./sqlite/configure                                   \
-    && make all                                             \
+RUN true                                                                                    \
+    && git clone --depth 1 --branch "$SQLITE_VERSION" file:///usr/local/src/sqlite ./sqlite \
+    && ./sqlite/configure                                                                   \
+    && make all                                                                             \
     && ./sqlite3 --version
 
 #
