@@ -1,41 +1,31 @@
 #
-# Check out the SQLite git mirror and install all neccesary tools for building sqlite
+# Get started with all the tools we need to build SQLite
 #
-FROM alpine:3 as repository
-
-WORKDIR /usr/local/src
-
-RUN true                                                            \
-    && apk add --update-cache                                       \
-        ca-certificates libc-dev git autoconf libtool make gcc tcl  \
-    && git config --global advice.detachedHead false                \
-    && git config --global color.ui false
-
-# TODO: Actually use fossil...
-RUN git clone --verbose https://github.com/sqlite/sqlite.git
-
-#
-# Build our no frills version of sqlite
-#
-
-FROM repository as no-frills-builder
+FROM alpine:3 as builder
 
 WORKDIR /root
 
+RUN true                                        \
+    && apk add --update-cache                   \
+        libc-dev autoconf libtool make gcc tcl  \
+    && mkdir --parents /root/src /root/build /root/install 
+
+#
+#
+#
+FROM builder as no-frills-builder
+
+COPY /* /root/src
+
 ARG SQLITE_VERSION=master
-RUN true                                                                                    \
-    && git clone --depth 1 --branch "$SQLITE_VERSION" file:///usr/local/src/sqlite ./sqlite \
-    && ./sqlite/configure                                                                   \
-    && make all                                                                             \
-    && ./sqlite3 --version
+RUN true                            \
+    && cd build ; ../src/configure  \
+    && make install DESTDIR=$( realpath ../install )
 
 #
-# Package our no frills version of sqlite in a alpine container
+# The image we're going to release
 #
-
 FROM alpine:3 as sqlite
 
-COPY --from=no-frills-builder /root/sqlite3 /usr/bin/sqlite3
-
-
-
+ENTRYPOINT /usr/local/bin/sqlite3
+COPY --from=no-frills-builder /root/install/ /
