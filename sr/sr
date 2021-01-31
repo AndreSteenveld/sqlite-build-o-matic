@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+set -e
+
+declare entrypoint="" ; entrypoint=$( readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0" )
+
+sr_steam_roller() {
+
+  local output_mode=$1
+  local output_file=""
+
+  local input_files=("${@:2}")
+
+  case $output_mode in
+    -) output_file="/dev/stdout" ;;
+    =) output_file=$(mktemp) ;;
+    *) output_file=$output_mode ;;
+  esac
+
+  for input_file in "${input_files[@]}"; do
+
+    [[ $input_file = "-" ]] && input_file="/dev/stdin"
+
+    tar --extract \
+      --file "$input_file" \
+      --ignore-zeros \
+      --totals \
+      --to-command="TAR_OUTPUT_FILE=$output_file ; source $entrypoint ; sr_update_file"
+
+  done
+
+  if [[ $output_mode = "=" ]]; then 
+    cat "$output_file"
+    rm -f "$output_file"
+  fi
+
+}
+
+sr_update_file() {
+
+  local temp_file="" ; temp_file=$( mktemp )
+
+  cat > "$temp_file"
+
+  tar --append \
+    --file "$TAR_OUTPUT_FILE" \
+    --mode="$TAR_MODE" \
+    --transform="s/.*/$TAR_FILENAME/" \
+    --owner="$TAR_UNAME" \
+    --group="$TAR_GNAME" \
+    --mtime="$(date -d @"$TAR_MTIME")" \
+    --dereference "$temp_file"
+
+  rm "$temp_file"
+
+}
+
+sr_main() {
+
+  if [[ $1 = "--help" ]]; then
+
+    printf '%s\n'\
+      'sr - steam-roller - Flatten multiple tar archives in to a single (non concatenated) archive ' \
+      '                                                                                            ' \
+      'Usage:                                                                                      ' \
+      '  sr --help                                                                                 ' \
+      '  sr <(output_file> | - | = )> [( - | input_files...)]                                      ' \
+      '                                                                                            ' \
+      'Ouput target:                                                                               ' \
+      ' - : Output resulting tar file to stdout                                                    ' \
+      ' = : Generate a temp file to write to and write that to stdout when done                    ' \
+      ' output_file : Append directly to specified tar file (or create if it doesn''t exist)       ' \
+      '                                                                                            ' \
+      'Examples:                                                                                   ' \
+      '  Concatenate all tar files, flatten using sr and output to file                            ' \
+      '    cat ./*.tar | sr - - > ./output.tar                                                     ' \
+      '                                                                                            ' \
+      '  Same as above with all the filenames provided                                             ' \
+      '    sr ./output.tar ./*.tar                                                                 '
+
+    exit
+
+  fi
+
+  sr_steam_roller "$@"
+
+}
+
+export -f sr_update_file
+
+(return 0 2>/dev/null) || sr_main "$@"
