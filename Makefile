@@ -15,7 +15,7 @@ sqlite-releases:
 	docker run --rm --workdir /usr/local/src/sqlite localhost/sqlite:repository git tag \
 		| grep -E '^version-.*$$' > ./sqlite-releases
 
-build:
+build: bootstrap
 	docker build --rm                                                          \
 		--cache-from localhost/sqlite:repository                               \
 		--target sqlite                                                        \
@@ -25,8 +25,8 @@ build:
 		| tee >( sed -e 's/\x1b\[.\{1,5\}m//g' > $(SQLITE_VERSION).build.log ) \
 		| sed -e 's/^/[ $(SQLITE_TAG) ] /';
 
-	docker run --rm --tty andresteenveld/sqlite:$(SQLITE_TAG) sqlite3 --version \
-		&& rm ./$(SQLITE_VERSION).build.log                                     \
+	docker run --rm --tty andresteenveld/sqlite:$(SQLITE_TAG) --version \
+		&& rm ./$(SQLITE_VERSION).build.log                             \
 		|| mv ./$(SQLITE_VERSION).build.log ./$(SQLITE_VERSION).build-failed.log;
 
 	docker image prune --force
