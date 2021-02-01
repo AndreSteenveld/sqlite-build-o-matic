@@ -19,15 +19,12 @@ sqlite-releases:
 
 # cat <( tar --create --file - ./Dockerfile ) <( cd ./sqlite/ ; git archive --format tar master )
 build: bootstrap
-	cat                                                     \
-		<( tar --create --file - ./Dockerfile )             \
-		<( cd ./sqlite/ ; git archive --format tar master ) \
-	| docker build                                          \
+	docker build                                          \
 		--target sqlite                                     \
 		--build-arg SQLITE_VERSION=$(SQLITE_VERSION)        \
 		--tag andresteenveld/sqlite:$(SQLITE_TAG)           \
 		--cache-from localhost/sqlite:builder               \
-		--rm -                                              \
+		--rm .                                              \
 	| tee >( sed -e 's/\x1b\[.\{1,5\}m//g' > $(SQLITE_VERSION).build.log ) \
 	| sed -e 's/^/[ $(SQLITE_TAG) ] /';
 

@@ -15,7 +15,7 @@ RUN true                                        \
 #
 FROM builder as no-frills-builder
 
-COPY /* /root/src
+COPY /sqlite/ /root/src
 
 ARG SQLITE_VERSION=master
 RUN true                            \
