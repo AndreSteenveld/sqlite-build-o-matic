@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-set -e
+# Exit on error. Append "|| true" if you expect an error.
+set -o errexit
+# Exit on error inside any functions or subshells.
+set -o errtrace
+# Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+set -o nounset
+# Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+set -o pipefail
 
 declare entrypoint="" ; entrypoint=$( readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0" )
 
@@ -25,7 +32,7 @@ sr_steam_roller() {
       --file "$input_file" \
       --ignore-zeros \
       --totals \
-      --to-command="TAR_OUTPUT_FILE=$output_file ; source $entrypoint ; sr_update_file"
+      --to-command="bash -c \"TAR_OUTPUT_FILE=$output_file ; source $entrypoint ; sr_update_file \""
 
   done
 
@@ -45,7 +52,7 @@ sr_update_file() {
   tar --append \
     --file "$TAR_OUTPUT_FILE" \
     --mode="$TAR_MODE" \
-    --transform="s/.*/$TAR_FILENAME/" \
+    --transform="s|.*|$TAR_FILENAME|" \
     --owner="$TAR_UNAME" \
     --group="$TAR_GNAME" \
     --mtime="$(date -d @"$TAR_MTIME")" \
