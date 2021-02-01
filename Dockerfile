@@ -35,6 +35,7 @@ RUN true                                                                        
 
 FROM alpine:3 as sqlite
 
+ENTRYPOINT /usr/bin/local/sqlite3
 COPY --from=no-frills-builder /root/sqlite3 /usr/bin/sqlite3
 
 

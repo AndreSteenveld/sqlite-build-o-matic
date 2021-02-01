@@ -28,7 +28,6 @@ eval "$sqlite_docker_command" run                   \
     --rm --interactive --tty                        \
     --workdir "$sqlite_workdir"                     \
     --mount type=bind,src="$sqlite_source",dst=//-  \
-    --entrypoint //usr/bin/sqlite3                  \
     "$image" "$@"
 
 
